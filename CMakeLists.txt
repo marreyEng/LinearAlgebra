@@ -26,6 +26,7 @@ PRIVATE
     BASE_DIRS include
     FILES
         include/Vector.h
+        include/IndexSequence.h
 )
 
 target_link_libraries(exec
