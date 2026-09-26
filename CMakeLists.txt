@@ -20,6 +20,12 @@ add_executable(exec)
 target_sources(exec
 PRIVATE
     src/main.cpp
+PRIVATE
+    FILE_SET headers
+    TYPE HEADERS
+    BASE_DIRS include
+    FILES
+        include/Vector.h
 )
 
 target_link_libraries(exec
