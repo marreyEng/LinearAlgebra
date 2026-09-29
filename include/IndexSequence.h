@@ -35,16 +35,16 @@ namespace Sequence{
     };
 
     template<auto From, auto To>
-    using CreateFromTo = typename CreateImpl<std::common_type_t<decltype(From), decltype(To)>, From, To>::Result;
+    using CreateRange = typename CreateImpl<std::common_type_t<decltype(From), decltype(To)>, From, To>::Result;
     template<auto To>
-    using CreateTo = typename CreateImpl<std::common_type_t<decltype(0),decltype(To)>, 0, To>::Result;    
+    using CreateFromZero = typename CreateImpl<std::common_type_t<decltype(0),decltype(To)>, 0, To>::Result;
     
     template<auto End, auto Offset>
     struct CreateOffsetImpl{
         template<auto... Is>
-        static constexpr auto offset_sequence(Instance<Is...>) -> Instance<(Is+Offset)...>{}
+        static constexpr auto offset(Instance<Is...>) -> Instance<(Is+Offset)...>{}
 
-        using Result = decltype(offset_sequence(CreateTo<End-Offset>{}));
+        using Result = decltype(offset(CreateFromZero<End-Offset>{}));
     };
     template<auto End, auto Offset>
     using CreateOffset = typename CreateOffsetImpl<End, Offset>::Result;
@@ -52,8 +52,12 @@ namespace Sequence{
 
     template<auto From, auto To, auto Skip>
     struct CreateFromToSkipImpl{
-        using A = CreateTo<Skip>;
-        using B = CreateFromTo<Skip+1,To>;
+        static_assert(From <= To,  "");
+        static_assert(Skip <= To-1,"");
+        static_assert(From <= Skip,"");
+
+        using A = CreateFromZero<Skip>;
+        using B = CreateRange<Skip+1,To>;
         
         using Result = Concat<A,B>;
     };
@@ -62,10 +66,11 @@ namespace Sequence{
 }
 
 static_assert(std::is_same_v<Sequence::CreateOffset<5, 0>, Sequence::Instance<0,1,2,3,4>>, "");
+static_assert(std::is_same_v<Sequence::CreateFromToSkip<0, 10, 0>, Sequence::Instance<  1,2,3,4,5,6,7,8,9>>, "");
 static_assert(std::is_same_v<Sequence::CreateFromToSkip<0, 10, 1>, Sequence::Instance<0,  2,3,4,5,6,7,8,9>>, "");
 static_assert(std::is_same_v<Sequence::CreateFromToSkip<0, 10, 5>, Sequence::Instance<0,1,2,3,4,  6,7,8,9>>, "");
 static_assert(std::is_same_v<Sequence::CreateFromToSkip<0, 10, 9>, Sequence::Instance<0,1,2,3,4,5,6,7,8  >>, "");
-static_assert(std::is_same_v<Sequence::CreateFromTo<0, 10>, Sequence::Instance<0,1,2,3,4,5,6,7,8,9>>, "");
-static_assert(std::is_same_v<Sequence::CreateTo<10>, Sequence::Instance<0,1,2,3,4,5,6,7,8,9>>, "");
+static_assert(std::is_same_v<Sequence::CreateRange<0, 10>, Sequence::Instance<0,1,2,3,4,5,6,7,8,9>>, "");
+static_assert(std::is_same_v<Sequence::CreateFromZero<10>, Sequence::Instance<0,1,2,3,4,5,6,7,8,9>>, "");
 
 #endif

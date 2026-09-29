@@ -2,6 +2,7 @@
 #define VECTOR_H
 
 #include <type_traits>
+#include <IndexSequence.h>
 
 template<typename T, size_t N>
 class Vector{
@@ -83,6 +84,17 @@ public:
     friend constexpr Vector cross(const Vector& lhs, const Vector& rhs){
         return crossImpl(lhs, rhs, std::make_index_sequence<M>{});
     }
+
+protected:
+    template<size_t... Is>
+    constexpr auto projectImpl(Sequence::Instance<Is...>) const {
+        return Vector<T,N-1>((data[Is])...);
+    }
+public:
+    template<size_t D>
+    constexpr auto project() const {
+        return projectImpl(Sequence::CreateFromToSkip<0,N,D>{});
+    }
 };
 
 template<typename... Ts>
@@ -93,6 +105,9 @@ namespace Asserts_Vector
     constexpr auto v123 = Vector(1,2,3);
     constexpr auto v456 = Vector(4,5,6);
     constexpr auto v789 = Vector(7,8,9);
+    constexpr auto v_23 = v123.project<0>();
+    constexpr auto v4_6 = v456.project<1>();
+    constexpr auto v78_ = v789.project<2>();
 
     static_assert(v123 == v123, "Equal");
     static_assert(v456 == v456, "Equal");
