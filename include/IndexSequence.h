@@ -2,95 +2,70 @@
 #define INDEX_SEQUENCE_H
 
 #include <type_traits>
+#include <utility>
+#include <iostream>
+
+namespace Sequence{
+    template<auto... Vs>
+    struct Instance{
+        using Type = std::common_type_t<decltype(Vs)...>;
+
+        static void print(){
+            (std::cout << ... << Vs);
+        }
+    };
+
+    template<typename Sequence1, typename Sequence2>
+    struct ConcatImpl;
+    template<auto... Vs1, auto...Vs2>
+    struct ConcatImpl<Instance<Vs1...>, Instance<Vs2...>> {
+        using Result = Instance<Vs1..., Vs2...>;
+    };
+    template<typename Sequence1, typename Sequence2>
+    using Concat = typename ConcatImpl<Sequence1, Sequence2>::Result;
 
 
-template<size_t End, size_t Offset>
-struct MakeOffsetSequenceImpl{
-    template<size_t... Is>
-    static constexpr auto offset_sequence(std::index_sequence<Is...>) -> std::index_sequence<(Is+Offset)...>{}
+    template<typename Type, Type From, Type To, Type... Pack>
+    struct CreateImpl{
+        using Result = typename CreateImpl<Type, From, To-1, To-1, Pack...>::Result;
+    };
+    template<typename Type, Type Begin, Type... Pack>
+    struct CreateImpl<Type, Begin, Begin, Pack...>{
+        using Result = Instance<Pack...>;
+    };
 
-    using Result = decltype(offset_sequence(std::make_index_sequence<End-Offset>{}));
-};
-template<size_t Begin, size_t End>
-using MakeOffsetSequence = typename MakeOffsetSequenceImpl<End, Begin>::Result;
+    template<auto From, auto To>
+    using CreateFromTo = typename CreateImpl<std::common_type_t<decltype(From), decltype(To)>, From, To>::Result;
+    template<auto To>
+    using CreateTo = typename CreateImpl<std::common_type_t<decltype(0),decltype(To)>, 0, To>::Result;    
+    
+    template<auto End, auto Offset>
+    struct CreateOffsetImpl{
+        template<auto... Is>
+        static constexpr auto offset_sequence(Instance<Is...>) -> Instance<(Is+Offset)...>{}
 
-namespace AssertMakeOffsetSequence{
-    using from_0_to_10 = MakeOffsetSequence<0,10>;
-    using from_1_to_10 = MakeOffsetSequence<1,10>;
+        using Result = decltype(offset_sequence(CreateTo<End-Offset>{}));
+    };
+    template<auto End, auto Offset>
+    using CreateOffset = typename CreateOffsetImpl<End, Offset>::Result;
 
-    static_assert(std::is_same_v<from_0_to_10, std::index_sequence<0,1,2,3,4,5,6,7,8,9>>,    "from_0_to_10 = 0,1,2,3,4,5,6,7,8,9");
-    static_assert(std::is_same_v<from_1_to_10, std::index_sequence<1,2,3,4,5,6,7,8,9>>,      "from_1_to_10 = 1,2,3,4,5,6,7,8,9");
+
+    template<auto From, auto To, auto Skip>
+    struct CreateFromToSkipImpl{
+        using A = CreateTo<Skip>;
+        using B = CreateFromTo<Skip+1,To>;
+        
+        using Result = Concat<A,B>;
+    };
+    template<auto From, auto To, auto Skip>
+    using CreateFromToSkip = typename CreateFromToSkipImpl<From, To, Skip>::Result;
 }
 
-//Class-like IndexSequence. Every struct is like a static method of the class
-namespace IndexSequence{
-
-    template<size_t...Is>
-    struct Instance{};
-
-    template<size_t From, size_t To,  size_t... Ns>
-    struct CreateHelper{
-        using Result = CreateHelper<From, To-1, To-1, Ns...>::Result;
-    };
-    template<size_t NM, size_t... Ns>
-    struct CreateHelper<NM,NM,Ns...>{
-        using Result = Instance<Ns...>;
-    };
-
-    template<size_t From, size_t To, size_t Skip, size_t... Ns>
-    struct CreateSkipHelper;
-    template<size_t Current, size_t End, size_t Skip, size_t... Ns>
-    struct CreateSkipHelper{
-        using Result = typename CreateSkipHelper<Current + 1, End, Skip, Ns..., Current>::Result;
-    };
-    template<size_t Skip, size_t End, size_t... Ns>
-    struct CreateSkipHelper<Skip, End, Skip, Ns...>{
-        using Result = typename CreateSkipHelper<Skip + 2, End, Skip, Ns..., Skip+1>::Result;
-    };
-    template<size_t End, size_t Skip, size_t... Ns>
-    struct CreateSkipHelper<End,End,Skip,Ns...>{
-        using Result = Instance<Ns...>;
-    };
-
-    //Dispatcher to:
-    //If 1 arg  - Sequence<0,...>,
-    //if 2 args - Sequence<Begin,End>,
-    //if 3 args - Sequence<Begin,End,Skip> 
-    template<size_t... Args>
-    struct CreateDispatcher;
-    template<size_t From, size_t To, size_t Skip>
-    struct CreateDispatcher<From, To, Skip>{
-        using Result = typename CreateSkipHelper<From, To, Skip>::Result;
-    };
-    template<size_t From, size_t To>
-    struct CreateDispatcher<From, To>{
-        using Result = typename CreateHelper<From, To>::Result;
-    };
-    template<size_t To>
-    struct CreateDispatcher<To>{
-        using Result = typename CreateHelper<0,To>::Result;
-    };
-    template<size_t... FromTo>
-    using Create = typename CreateDispatcher<FromTo...>::Result;
-
-    //Concate 2 sequences
-    template<typename Seq1, typename Seq2>
-    struct Concate;
-    template<size_t... Is1, size_t... Is2>
-    struct Concate<Instance<Is1...>, Instance<Is2...>>{
-        using Result = Instance<Is1..., Is2...>;
-    };
-
-
-    namespace AssertIndexSequence{
-        using from_0_to_10 = Create<10>;
-        using from_1_to_10 = Create<1,10>;
-        using from_1_to_10_skip_7 = Create<1,10,7>;
-
-        static_assert(std::is_same_v<from_0_to_10, Instance<0,1,2,3,4,5,6,7,8,9>>,    "from_0_to_10 = 0,1,2,3,4,5,6,7,8,9");
-        static_assert(std::is_same_v<from_1_to_10, Instance<1,2,3,4,5,6,7,8,9>>,      "from_1_to_10 = 1,2,3,4,5,6,7,8,9");
-        static_assert(std::is_same_v<from_1_to_10_skip_7, Instance<1,2,3,4,5,6,8,9>>, "from_1_to_10_skip_7 = 1,2,3,4,5,6,8,9");
-    }
-}
+static_assert(std::is_same_v<Sequence::CreateOffset<5, 0>, Sequence::Instance<0,1,2,3,4>>, "");
+static_assert(std::is_same_v<Sequence::CreateFromToSkip<0, 10, 1>, Sequence::Instance<0,  2,3,4,5,6,7,8,9>>, "");
+static_assert(std::is_same_v<Sequence::CreateFromToSkip<0, 10, 5>, Sequence::Instance<0,1,2,3,4,  6,7,8,9>>, "");
+static_assert(std::is_same_v<Sequence::CreateFromToSkip<0, 10, 9>, Sequence::Instance<0,1,2,3,4,5,6,7,8  >>, "");
+static_assert(std::is_same_v<Sequence::CreateFromTo<0, 10>, Sequence::Instance<0,1,2,3,4,5,6,7,8,9>>, "");
+static_assert(std::is_same_v<Sequence::CreateTo<10>, Sequence::Instance<0,1,2,3,4,5,6,7,8,9>>, "");
 
 #endif

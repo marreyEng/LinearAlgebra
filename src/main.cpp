@@ -2,15 +2,16 @@
 #include <Vector.h>
 #include <IndexSequence.h>
 
-template<size_t...Is>
-void print(IndexSequence::Instance<Is...>){
+template<typename T, T...Is>
+void print(Sequence::Instance<Is...>){
     (std::cout << ... << Is);
 }
 
 int main(){
 
-    auto i = IndexSequence::Instance<0,1,2>{};
-    print(i);
+    auto i = Sequence::Instance<0,1,2>{};
+    
+    i.print();
 
     return 0;
 }
