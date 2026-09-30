@@ -35,6 +35,10 @@ public:
 
 protected:
     template<size_t... Is>
+    constexpr Vector NegateImpl(std::index_sequence<Is...>) const {
+        return Vector((-data[Is])...);
+    }
+    template<size_t... Is>
     constexpr Vector& IncrementImpl(const Vector& v, std::index_sequence<Is...>){
         ((data[Is] += v.data[Is]), ...);
         return *this;
@@ -49,6 +53,9 @@ protected:
         return ((data[Is] == v.data[Is]) && ...);
     }
 public:
+    constexpr Vector operator-() const {
+        return NegateImpl(std::make_index_sequence<N>{});
+    }
     constexpr Vector operator+=(const Vector& other) {
         return IncrementImpl(other, std::make_index_sequence<N>{});
     }
@@ -95,6 +102,16 @@ public:
     constexpr auto project() const {
         return projectImpl(Sequence::CreateFromToSkip<0,N,D>{});
     }
+
+protected:
+    template<size_t... Is>
+    friend constexpr auto crossImpl(const Vector& lhs, const Vector& rhs, Sequence::Instance<Is...>) {
+        return Vector((lhs.data[Is] * rhs.data[Is])...);
+    }
+public:
+    friend constexpr auto cross(const Vector& lhs, const Vector& rhs) {
+        return crossImpl(lhs,rhs, Sequence::CreateFromZero<N>{});
+    }
 };
 
 template<typename... Ts>
@@ -105,6 +122,9 @@ namespace Asserts_Vector
     constexpr auto v123 = Vector(1,2,3);
     constexpr auto v456 = Vector(4,5,6);
     constexpr auto v789 = Vector(7,8,9);
+
+
+
     constexpr auto v_23 = v123.project<0>();
     constexpr auto v4_6 = v456.project<1>();
     constexpr auto v78_ = v789.project<2>();
@@ -115,6 +135,10 @@ namespace Asserts_Vector
     static_assert(v123 != v456, "NotEqual");
     static_assert(v456 != v789, "NotEqual");
     static_assert(v789 != v123, "NotEqual");
+
+    static_assert(-v123 == Vector(-1,-2,-3), "Negate");
+    static_assert(-v456 == Vector(-4,-5,-6), "Negate");
+    static_assert(-v789 == Vector(-7,-8,-9), "Negate");
 
     static_assert((v123 + v456) == Vector( 5, 7, 9), "Add");
     static_assert((v456 + v789) == Vector(11,13,15), "Add");
@@ -128,7 +152,7 @@ namespace Asserts_Vector
     static_assert(dot(v456,v789) == (28 + 40 + 54), "Dot");
     static_assert(dot(v789,v123) == ( 7 + 16 + 27), "Dot");
 
-    static_assert(cross(v123,v456) == Vector<int,3>{0,1,2}, "cross");
+    static_assert(cross(v123,v123) == Vector<int,3>{1,4,9}, "cross");
     // static_assert(cross(v456,v789) == Vector<int,3>{}), "cross");
     // static_assert(cross(v789,v123) == Vector<int,3>{}), "cross");
 }
