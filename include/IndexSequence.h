@@ -8,12 +8,33 @@
 namespace Sequence{
     template<auto... Vs>
     struct Instance{
+        
         using Type = std::common_type_t<decltype(Vs)...>;
 
         static void print(){
             (std::cout << ... << Vs);
         }
     };
+
+    template<typename Sequence>
+    struct First;
+    template<auto I, auto... Is>
+    struct First<Instance<I,Is...>>{
+        static constexpr auto result = I;
+    };
+
+    template<typename Sequence>
+    struct Last;
+    template<auto I, auto... Is>
+    struct Last<Instance<I,Is...>>{
+        static constexpr auto result = sizeof...(Is) ==  0 ? I : (Is,...);
+    };
+
+    template<typename Sequence>
+    struct Reverse;
+    template<auto >
+    struct Reverse;
+    
 
     template<typename Sequence1, typename Sequence2>
     struct ConcatImpl;
