@@ -30,10 +30,6 @@ namespace Sequence{
         static constexpr auto result = sizeof...(Is) ==  0 ? I : (Is,...);
     };
 
-    template<typename Sequence>
-    struct Reverse;
-    template<auto >
-    struct Reverse;
     
 
     template<typename Sequence1, typename Sequence2>
@@ -84,6 +80,30 @@ namespace Sequence{
     };
     template<auto From, auto To, auto Skip>
     using CreateFromToSkip = typename CreateFromToSkipImpl<From, To, Skip>::Result;
+
+
+
+
+    template<auto... Vs, auto... Is>
+    constexpr auto reverse_impl(Instance<Vs...>, Instance<Is...>){
+        using T = typename Instance<Vs...>::Type;
+        constexpr T arr[] = { Vs... };
+        return Instance<arr[sizeof...(Vs) - 1 - Is]...>{};
+    }
+    template<typename Sequence>
+    struct ReverseImpl;
+    template<auto...Vs>
+    struct ReverseImpl<Instance<Vs...>>{
+        using Result = decltype(reverse_impl(Instance<Vs...>{}, CreateFromZero<sizeof...(Vs)>{}));
+    };
+    template<typename Sequence>
+    using Reverse = typename ReverseImpl<Sequence>::Result;
+    using a = typename ReverseImpl<Instance<0,1,2>>::Result;
+    using b = Instance<2,1,0>;
+
+    using aa = a::Type;
+    using bb = b::Type;
+    static_assert(std::is_same_v<a, b>, "");
 }
 
 static_assert(std::is_same_v<Sequence::CreateOffset<5, 0>, Sequence::Instance<0,1,2,3,4>>, "");
