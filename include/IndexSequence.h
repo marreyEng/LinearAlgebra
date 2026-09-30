@@ -8,7 +8,6 @@
 namespace Sequence{
     template<auto... Vs>
     struct Instance{
-        
         using Type = std::common_type_t<decltype(Vs)...>;
 
         static void print(){
@@ -16,18 +15,22 @@ namespace Sequence{
         }
     };
 
+
+
     template<typename Sequence>
     struct First;
-    template<auto I, auto... Is>
-    struct First<Instance<I,Is...>>{
-        static constexpr auto result = I;
+    template<auto V, auto... Vs>
+    struct First<Instance<V,Vs...>>{
+        static constexpr auto result = V;
     };
+
+
 
     template<typename Sequence>
     struct Last;
-    template<auto I, auto... Is>
-    struct Last<Instance<I,Is...>>{
-        static constexpr auto result = sizeof...(Is) ==  0 ? I : (Is,...);
+    template<auto V, auto... Vs>
+    struct Last<Instance<V,Vs...>>{
+        static constexpr auto result = sizeof...(Vs) ==  0 ? V : (Vs,...);
     };
 
     
@@ -40,6 +43,8 @@ namespace Sequence{
     };
     template<typename Sequence1, typename Sequence2>
     using Concat = typename ConcatImpl<Sequence1, Sequence2>::Result;
+
+
 
 
     template<typename Type, Type From, Type To, Type... Pack>
@@ -67,43 +72,40 @@ namespace Sequence{
     using CreateOffset = typename CreateOffsetImpl<End, Offset>::Result;
 
 
+
     template<auto From, auto To, auto Skip>
     struct CreateFromToSkipImpl{
         static_assert(From <= To,  "");
         static_assert(Skip <= To-1,"");
         static_assert(From <= Skip,"");
 
-        using A = CreateFromZero<Skip>;
-        using B = CreateRange<Skip+1,To>;
+        using Left  = CreateFromZero<Skip>;
+        using Right = CreateRange<Skip+1,To>;
         
-        using Result = Concat<A,B>;
+        using Result = Concat<Left, Right>;
     };
     template<auto From, auto To, auto Skip>
     using CreateFromToSkip = typename CreateFromToSkipImpl<From, To, Skip>::Result;
+    
 
 
-
-
+    
+    template<typename Sequence>
+    struct ReverseImpl;
     template<auto... Vs, auto... Is>
     constexpr auto reverse_impl(Instance<Vs...>, Instance<Is...>){
         using T = typename Instance<Vs...>::Type;
         constexpr T arr[] = { Vs... };
         return Instance<arr[sizeof...(Vs) - 1 - Is]...>{};
     }
-    template<typename Sequence>
-    struct ReverseImpl;
     template<auto...Vs>
     struct ReverseImpl<Instance<Vs...>>{
         using Result = decltype(reverse_impl(Instance<Vs...>{}, CreateFromZero<sizeof...(Vs)>{}));
     };
     template<typename Sequence>
     using Reverse = typename ReverseImpl<Sequence>::Result;
-    using a = typename ReverseImpl<Instance<0,1,2>>::Result;
-    using b = Instance<2,1,0>;
 
-    using aa = a::Type;
-    using bb = b::Type;
-    static_assert(std::is_same_v<a, b>, "");
+    static_assert(std::is_same_v<Reverse<Instance<0,1,2>>, Instance<2,1,0>>, "");
 }
 
 static_assert(std::is_same_v<Sequence::CreateOffset<5, 0>, Sequence::Instance<0,1,2,3,4>>, "");

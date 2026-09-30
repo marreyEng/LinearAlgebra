@@ -53,6 +53,13 @@ protected:
         return ((data[Is] == v.data[Is]) && ...);
     }
 public:
+    constexpr Type operator[](size_t i) const {
+        return data[i];
+    }
+    constexpr Type& operator[](size_t i) {
+        return data[i];
+    }
+
     constexpr Vector operator-() const {
         return NegateImpl(std::make_index_sequence<N>{});
     }
@@ -81,16 +88,6 @@ public:
         return dotImpl(lhs, rhs, std::make_index_sequence<N>{});
     }
 
-protected:
-    template<size_t... Is>
-    friend constexpr Vector crossImpl(const Vector& lhs,const Vector& rhs, std::index_sequence<Is...>){
-        return {Is...};
-    }
-public:
-    template<size_t M = N, typename = std::enable_if_t<(M == 3)>>
-    friend constexpr Vector cross(const Vector& lhs, const Vector& rhs){
-        return crossImpl(lhs, rhs, std::make_index_sequence<M>{});
-    }
 
 protected:
     template<size_t... Is>
@@ -102,16 +99,6 @@ public:
     constexpr auto project() const {
         return projectImpl(Sequence::CreateFromToSkip<0,N,D>{});
     }
-
-protected:
-    template<size_t... Is>
-    friend constexpr auto crossImpl(const Vector& lhs, const Vector& rhs, Sequence::Instance<Is...>) {
-        return Vector((lhs.data[Is] * rhs.data[Is])...);
-    }
-public:
-    friend constexpr auto cross(const Vector& lhs, const Vector& rhs) {
-        return crossImpl(lhs,rhs, Sequence::CreateFromZero<N>{});
-    }
 };
 
 template<typename... Ts>
@@ -122,8 +109,6 @@ namespace Asserts_Vector
     constexpr auto v123 = Vector(1,2,3);
     constexpr auto v456 = Vector(4,5,6);
     constexpr auto v789 = Vector(7,8,9);
-
-
 
     constexpr auto v_23 = v123.project<0>();
     constexpr auto v4_6 = v456.project<1>();
@@ -152,7 +137,7 @@ namespace Asserts_Vector
     static_assert(dot(v456,v789) == (28 + 40 + 54), "Dot");
     static_assert(dot(v789,v123) == ( 7 + 16 + 27), "Dot");
 
-    static_assert(cross(v123,v123) == Vector<int,3>{1,4,9}, "cross");
+    // static_assert(cross(v123,v123) == Vector<int,3>{1,4,9}, "cross");
     // static_assert(cross(v456,v789) == Vector<int,3>{}), "cross");
     // static_assert(cross(v789,v123) == Vector<int,3>{}), "cross");
 }

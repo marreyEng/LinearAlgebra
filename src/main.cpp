@@ -8,10 +8,12 @@ void print(Sequence::Instance<Is...>){
 }
 
 int main(){
+    const Vector v((int)1,(int)2,(int)3);
 
-    auto i = Sequence::Instance<0,1,2>{};
-    
-    i.print();
+    auto a = cross(v,v);
 
+    for(int i = 0; i < a.Size; i++){
+        std::cout << a[i] << ' ';
+    }
     return 0;
 }

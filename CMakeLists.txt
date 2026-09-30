@@ -6,6 +6,7 @@ set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_CXX_FLAGS="-S")
 
 if(PROJECT_IS_TOP_LEVEL)
     execute_process(
@@ -16,6 +17,7 @@ if(PROJECT_IS_TOP_LEVEL)
 endif()
 
 add_executable(exec)
+
 
 target_sources(exec
 PRIVATE
